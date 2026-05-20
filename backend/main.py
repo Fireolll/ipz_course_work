@@ -18,10 +18,10 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Налаштування CORS (щоб твій майбутній React міг звертатися до бекенду)
+# Налаштування CORS 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"], # Адреса Vite/React сервера
+    allow_origins=["http://localhost:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
