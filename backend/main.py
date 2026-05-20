@@ -2,8 +2,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-# Імпортуємо наші роутери
-from backend.routers import analytics_router
+# Імпортуємо наші роутери (БЕЗ слова backend)
 from routers import (
     auth_router, 
     transactions_router, 
@@ -12,6 +11,7 @@ from routers import (
     users_router,
     analytics_router
 )
+
 app = FastAPI(
     title="Financial Tracker API",
     description="Бекенд для системи управління особистими фінансами",
@@ -38,5 +38,3 @@ app.include_router(analytics_router)
 @app.get("/")
 async def root():
     return {"message": "Сервер Financial Tracker успішно працює!"}
-
-
