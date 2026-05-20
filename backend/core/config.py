@@ -1,1 +1,18 @@
 # Завантаження змінних середовища (.env), секретні ключі JWT, налаштування пошти.
+
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+class Settings:
+    # База даних
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql+asyncpg://password123@localhost:5432/Financial_Tracker")
+
+    # Безпека та JWT токени
+    SECRET_KEY: str = os.getenv("SECRET_KEY", "fallback_secret_key_do_not_use_in_prod")
+    ALGORITHM: str = os.getenv("ALGORITHM", "HS256")
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
+
+# Створюємо єдиний екземпляр налаштувань, який будемо імпортувати в інші файли
+settings = Settings()
