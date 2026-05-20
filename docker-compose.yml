@@ -14,8 +14,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./db_init:/docker-entrypoint-initdb.d
 
-
-api:
+  api:
     build: 
       context: ./backend
       dockerfile: Dockerfile
@@ -23,8 +22,9 @@ api:
     ports:
       - "8000:8000"
     env_file:
-      - .env
+      - ./backend/.env
     depends_on:
       - db
+
 volumes:
   postgres_data:
