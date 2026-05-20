@@ -1,3 +1,4 @@
 from .auth_service import register_new_user, authenticate_user
 from .transactions_service import process_new_transaction
 from .email_service import send_password_reset_email
+from .analytics_service import generate_balance_report
