@@ -19,6 +19,7 @@ async def create_new_transaction(
     db: AsyncSession = Depends(get_db)
 ):
     #Створює нову транзакцію (дохід або витрату) та автоматично оновлює баланс.
+
     new_tx = await transactions_service.process_new_transaction(
         db=db, 
         tx_data=tx_data, 
