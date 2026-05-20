@@ -4,8 +4,14 @@ from fastapi.middleware.cors import CORSMiddleware
 
 # Імпортуємо наші роутери
 from backend.routers import analytics_router
-from routers import auth_router,transactions_router,accounts_router,categories_router,users_router,analytics_router
-
+from routers import (
+    auth_router, 
+    transactions_router, 
+    accounts_router, 
+    categories_router, 
+    users_router,
+    analytics_router
+)
 app = FastAPI(
     title="Financial Tracker API",
     description="Бекенд для системи управління особистими фінансами",
