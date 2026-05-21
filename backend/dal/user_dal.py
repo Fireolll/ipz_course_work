@@ -20,5 +20,6 @@ async def create_user(db: AsyncSession, user_data: dict) -> UserModel:
  #створює нового користувача в базі даних. Після створення користувача, він повертає об'єкт UserModel з усіма даними, включаючи згенерований user_id. потрібен вже захешений пароль
     new_user = UserModel(**user_data)
     db.add(new_user)
-    await db.flush() 
+    await db.flush()
+    await db.commit()
     return new_user

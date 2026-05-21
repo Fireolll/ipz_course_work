@@ -10,6 +10,7 @@ async def create_category(db: AsyncSession, category_data: dict, user_id: int | 
     new_category = CategoryModel(**category_data, user_id=user_id)
     db.add(new_category)
     await db.flush()
+    await db.commit()
     return new_category
 
 async def get_user_categories(db: AsyncSession, user_id: int) -> list[CategoryModel]:

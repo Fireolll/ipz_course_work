@@ -11,6 +11,7 @@ async def create_transaction(db: AsyncSession, transaction_data: dict) -> Transa
     new_tx = TransactionModel(**transaction_data)
     db.add(new_tx)
     await db.flush()
+    await db.commit()
     return new_tx
 
 async def get_filtered_transactions(
