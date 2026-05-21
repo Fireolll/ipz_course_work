@@ -37,7 +37,7 @@ async def get_expenses_grouped_by_category(db: AsyncSession, user_id: int):
         .join(FinanceAccountModel, TransactionModel.fa_id == FinanceAccountModel.fa_id)
         .where(
             FinanceAccountModel.user_id == user_id,
-            CategoryModel.type_of_cash_flow == TypeOfCashFlow.EXPENSE
+            CategoryModel.type_of_cash_flow == TypeOfCashFlow.expense
         )
         .group_by(CategoryModel.category_name)
     )
