@@ -15,7 +15,11 @@ class UserModel(Base):
     password_hash = Column(String(255), nullable=False)
     
     currency = Column(SQLEnum(Currency, name="currency"), nullable=False, server_default="UAH")
-    financial_period = Column(SQLEnum(FinancialPeriod, name="financial_period"), nullable=False, server_default="month")
+    financial_period = Column(
+    SQLEnum(FinancialPeriod, name="financial_period", values_callable=lambda obj: [e.value for e in obj]), 
+    nullable=False, 
+    server_default="month"
+)
     
     created_at = Column(DateTime, nullable=False, server_default=func.now())
     updated_at = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())

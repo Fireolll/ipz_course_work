@@ -11,7 +11,7 @@ async def get_user_by_email(db: AsyncSession, email: str) -> UserModel | None:
     return result.scalars().first()
 
 async def get_user_by_id(db: AsyncSession, user_id: int) -> UserModel | None:
-    #Шукає користувача за його ID (потрібно для перевірки токенів).
+    #Шукає користувача за його ID
     stmt = select(UserModel).where(UserModel.user_id == user_id)
     result = await db.execute(stmt)
     return result.scalars().first()

@@ -7,10 +7,10 @@ class Currency(str, enum.Enum):
     EUR = "EUR"
 
 class FinancialPeriod(str, enum.Enum):
-    MONTH = "month"
-    QUARTER = "quarter"
-    YEAR = "year"
+    month = "month"
+    quarter = "quarter"
+    year = "year"
 
 class TypeOfCashFlow(str, enum.Enum):
-    INCOME = "income"
-    EXPENSE = "expense"
+    income = "income"
+    expense = "expense"

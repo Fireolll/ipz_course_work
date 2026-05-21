@@ -7,8 +7,7 @@ load_dotenv()
 
 class Settings:
     # База даних
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql+asyncpg://password123@localhost:5432/Financial_Tracker")
-
+    DATABASE_URL: str = os.environ["DATABASE_URL"]
     # Безпека та JWT токени
     SECRET_KEY: str = os.getenv("SECRET_KEY", "fallback_secret_key_do_not_use_in_prod")
     ALGORITHM: str = os.getenv("ALGORITHM", "HS256")
