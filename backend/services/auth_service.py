@@ -25,6 +25,9 @@ async def register_new_user(db: AsyncSession, user_in: UserCreate):
     #  Зберігаємо в базу
     new_user = await user_dal.create_user(db, user_data)
     
+    # Комітимо зміни
+    await db.commit()
+    
     return new_user
 
 

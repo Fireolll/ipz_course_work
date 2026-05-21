@@ -9,8 +9,8 @@ async def generate_balance_report(db: AsyncSession, user_id: int, user_currency:
     #формування готового звіту з балансом та розділенням по категоріях для користувача
     
     #Отримуємо загальні суми
-    total_income = await analytics_dal.get_total_cashflow_by_type(db, user_id, TypeOfCashFlow.INCOME)
-    total_expense = await analytics_dal.get_total_cashflow_by_type(db, user_id, TypeOfCashFlow.EXPENSE)
+    total_income = await analytics_dal.get_total_cashflow_by_type(db, user_id, TypeOfCashFlow.income)
+    total_expense = await analytics_dal.get_total_cashflow_by_type(db, user_id, TypeOfCashFlow.expense)
     
     # Вираховуємо чистий баланс
     net_balance = total_income - total_expense

@@ -16,7 +16,6 @@ async def create_reset_token(db: AsyncSession, user_id: int, token: str, expires
     )
     db.add(reset_record)
     await db.flush()
-    await db.commit()
     return reset_record
 
 async def get_valid_reset_token(db: AsyncSession, token: str) -> PasswordResetModel | None:
@@ -41,4 +40,3 @@ async def mark_token_as_used(db: AsyncSession, reset_record: PasswordResetModel)
         .values(used=True)
     )
     await db.execute(stmt)
-    await db.commit()

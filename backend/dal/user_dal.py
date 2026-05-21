@@ -21,5 +21,4 @@ async def create_user(db: AsyncSession, user_data: dict) -> UserModel:
     new_user = UserModel(**user_data)
     db.add(new_user)
     await db.flush()
-    await db.commit()
     return new_user

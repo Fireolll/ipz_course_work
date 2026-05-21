@@ -38,12 +38,13 @@ async def process_new_transaction(db: AsyncSession, tx_data: TransactionCreate, 
     if category.type_of_cash_flow == TypeOfCashFlow.EXPENSE: #type: ignore
         amount_delta = -tx_data.amount
 
-    # Відкриваємо транзакцію БД для гарантії збереження обох дій (ACID)
-    async with db.begin():
-        # 4. Оновлюємо баланс
-        await finance_account_dal.update_account_balance(db, account.fa_id, amount_delta) #type: ignore
-        
-        # 5. Записуємо саму транзакцію (у вигляді словника)
-        new_tx = await transaction_dal.create_transaction(db, tx_data.model_dump())
-        
+    # 4. Оновлюємо баланс
+    await finance_account_dal.update_account_balance(db, account.fa_id, amount_delta) #type: ignore
+    
+    # 5. Записуємо саму транзакцію (у вигляді словника)
+    new_tx = await transaction_dal.create_transaction(db, tx_data.model_dump())
+    
+    # 6. Комітимо всі зміни разом (ACID гарантія)
+    await db.commit()
+    
     return new_tx

@@ -10,7 +10,6 @@ async def create_account(db: AsyncSession, account_data: dict, user_id: int) -> 
     new_account = FinanceAccountModel(**account_data, user_id=user_id)
     db.add(new_account)
     await db.flush()
-    await db.commit()
     return new_account
 
 async def get_user_accounts(db: AsyncSession, user_id: int) -> list[FinanceAccountModel]:
@@ -41,4 +40,3 @@ async def update_account_balance(db: AsyncSession, account_id: int, amount_delta
         .values(balance=FinanceAccountModel.balance + amount_delta)
     )
     await db.execute(stmt)
-    await db.commit()
