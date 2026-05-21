@@ -44,7 +44,8 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
     )
     
     return encoded_jwt
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
 async def get_current_user(
     token: str = Depends(oauth2_scheme), 

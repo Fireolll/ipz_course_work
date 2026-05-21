@@ -7,13 +7,23 @@ from schemas.user_schema import UserCreate
 from core.security import get_password_hash, verify_password, create_access_token
 
 async def register_new_user(db: AsyncSession, user_in: UserCreate):
-    # перевіряємо email, чи вже існує акаунт з таким
-    existing_user = await user_dal.get_user_by_email(db, user_in.email)
-    if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, 
-            detail="Користувач з таким email вже існує"
-        )
+
+    hashed_password = get_password_hash(user_in.password)
+
+    user_data = user_in.model_dump(exclude={"password"})
+    user_data["password_hash"] = hashed_password
+    
+    # ДОДАЙ ЦІ ДВА РЯДКИ: примусово передаємо об'єкти Enum, а не текст
+    user_data["currency"] = user_in.currency
+    user_data["financial_period"] = user_in.financial_period
+
+    # Зберігаємо в базу
+    new_user = await user_dal.create_user(db, user_data)
+    
+    # Видали звідси await db.commit(), бо він у тебе ВЖЕ Є в user_dal.py!
+    print(f"✅ User successfully created: {new_user.user_id}")
+    
+    return new_user
 
     # Перетворюємо відкритий пароль на хеш
     hashed_password = get_password_hash(user_in.password)
@@ -24,9 +34,11 @@ async def register_new_user(db: AsyncSession, user_in: UserCreate):
 
     #  Зберігаємо в базу
     new_user = await user_dal.create_user(db, user_data)
+    print(f"✅ User flushed: {new_user.user_id}")
     
     # Комітимо зміни
     await db.commit()
+    print(f"✅ User committed to database: {new_user.user_id}")
     
     return new_user
 

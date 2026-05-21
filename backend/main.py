@@ -1,6 +1,7 @@
 # main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.openapi.utils import get_openapi
 
 # Імпортуємо наші роутери (БЕЗ слова backend)
 from routers import (
@@ -34,6 +35,28 @@ app.include_router(accounts_router)
 app.include_router(categories_router)
 app.include_router(users_router)
 app.include_router(analytics_router)
+
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+    openapi_schema = get_openapi(
+        title="Financial Tracker API",
+        version="1.0.0",
+        description="Бекенд для системи управління особистими фінансами",
+        routes=app.routes,
+    )
+    openapi_schema["components"]["securitySchemes"] = {
+        "bearer": {
+            "type": "http",
+            "scheme": "bearer",
+            "bearerFormat": "JWT",
+            "description": "JWT token from /auth/login",
+        }
+    }
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+app.openapi = custom_openapi
 
 @app.get("/")
 async def root():

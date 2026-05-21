@@ -1,4 +1,3 @@
-# models/user_model.py
 from sqlalchemy import Column, Integer, String, DateTime, Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import ENUM
 from sqlalchemy.sql import func
