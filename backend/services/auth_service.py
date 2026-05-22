@@ -25,23 +25,6 @@ async def register_new_user(db: AsyncSession, user_in: UserCreate):
     
     return new_user
 
-    # Перетворюємо відкритий пароль на хеш
-    hashed_password = get_password_hash(user_in.password)
-
-    #  перетворюємо пароль на хеш
-    user_data = user_in.model_dump(exclude={"password"})
-    user_data["password_hash"] = hashed_password
-
-    #  Зберігаємо в базу
-    new_user = await user_dal.create_user(db, user_data)
-    print(f"✅ User flushed: {new_user.user_id}")
-    
-    # Комітимо зміни
-    await db.commit()
-    print(f"✅ User committed to database: {new_user.user_id}")
-    
-    return new_user
-
 
 async def authenticate_user(db: AsyncSession, email: str, password: str):
 

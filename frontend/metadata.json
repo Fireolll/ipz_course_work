@@ -1,0 +1,6 @@
+{
+  "name": "Financial Tracker",
+  "description": "Система управління особистими фінансами для моніторингу доходів, витрат, рахунків та аналітики",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -6,7 +6,6 @@ services:
     restart: always
     environment:
       POSTGRES_USER: postgres
-      
       POSTGRES_PASSWORD: password123
       POSTGRES_DB: Financial_Tracker
     ports:
@@ -26,6 +25,18 @@ services:
       - DATABASE_URL=postgresql+asyncpg://postgres:password123@db:5432/Financial_Tracker
     depends_on:
       - db
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    restart: always
+    depends_on:
+      - api
+    environment:
+      - VITE_API_URL=http://api:8000
 
 volumes:
   postgres_data:
