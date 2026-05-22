@@ -12,7 +12,7 @@ function getAuthToken(): string | null {
 // Універсальна обгортка для JSON запитів (для всього, крім логіну)
 async function apiRequest<T>(
   endpoint: string,
-  method: "GET" | "POST" | "PUT" | "DELETE" = "GET",
+  method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE" = "GET",
   body?: any
 ): Promise<T> {
   const headers: HeadersInit = {
@@ -31,7 +31,14 @@ async function apiRequest<T>(
   });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      // Token expired or invalid: clear it and force a reload to trigger logout
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("ft_user");
+      window.location.reload();
+    }
     const errorData = await response.json().catch(() => ({}));
+    console.error("API ERROR:", response.status, errorData);
     throw new Error(errorData.detail || `Помилка: ${response.status}`);
   }
 
@@ -69,12 +76,16 @@ export const api = {
   // Рахунки
   getAccounts: () => apiRequest("/accounts/"),
   createAccount: (account: any) => apiRequest("/accounts/", "POST", account),
+  updateAccountStatus: (faId: number, data: { is_active: boolean }) => apiRequest(`/accounts/${faId}`, "PATCH", data),
+  updateAccountBalance: (faId: number, data: { balance: number }) => apiRequest(`/accounts/${faId}/balance`, "PATCH", data),
 
   // Категорії
   getCategories: () => apiRequest("/categories/"),
   createCategory: (category: any) => apiRequest("/categories/", "POST", category),
+  deleteCategory: (categoryId: number) => apiRequest(`/categories/${categoryId}`, "DELETE"),
 
   // Транзакції
   getTransactions: () => apiRequest("/transactions/"),
   createTransaction: (tx: any) => apiRequest("/transactions/", "POST", tx),
+  deleteTransaction: (txId: number) => apiRequest(`/transactions/${txId}`, "DELETE"),
 };

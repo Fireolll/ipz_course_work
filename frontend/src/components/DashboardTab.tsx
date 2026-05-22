@@ -31,8 +31,9 @@ export default function DashboardTab({
   onQuickAdd,
   setActiveTab 
 }: DashboardProps) {
+  const activeAccounts = accounts.filter(a => a.is_active);
   const [quickAmount, setQuickAmount] = useState("");
-  const [quickAccount, setQuickAccount] = useState(accounts[0]?.fa_id || 0);
+  const [quickAccount, setQuickAccount] = useState(activeAccounts[0]?.fa_id || 0);
   const [quickType, setQuickType] = useState<TypeOfCashFlow>(TypeOfCashFlow.EXPENSE);
   const [quickCategory, setQuickCategory] = useState<number>(0);
   const [quickDesc, setQuickDesc] = useState("");

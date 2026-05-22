@@ -78,9 +78,10 @@ export const EXCHANGE_RATES: Record<Currency, number> = {
   [Currency.EUR]: 44.5, // ~44.5 UAH on 2026
 };
 
-export function convertToCurrency(amount: number, from: Currency, to: Currency): number {
-  if (from === to) return amount;
-  const uahAmount = amount * EXCHANGE_RATES[from];
+export function convertToCurrency(amount: number | string, from: Currency, to: Currency): number {
+  const numAmount = Number(amount);
+  if (from === to) return numAmount;
+  const uahAmount = numAmount * EXCHANGE_RATES[from];
   return uahAmount / EXCHANGE_RATES[to];
 }
 

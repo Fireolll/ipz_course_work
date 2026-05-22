@@ -28,6 +28,7 @@ async def process_new_transaction(db: AsyncSession, tx_data: TransactionCreate, 
         )
         
     if not account.is_active: #type: ignore
+        print("DEBUG: Account is inactive", account.fa_id, account.is_active)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, 
             detail="Неможливо додати транзакцію: рахунок неактивний"
@@ -35,16 +36,21 @@ async def process_new_transaction(db: AsyncSession, tx_data: TransactionCreate, 
 
     # 3. Визначаємо дельту (суму для зміни балансу)
     amount_delta = tx_data.amount
-    if category.type_of_cash_flow == TypeOfCashFlow.EXPENSE: #type: ignore
+    if category.type_of_cash_flow == TypeOfCashFlow.expense: #type: ignore
         amount_delta = -tx_data.amount
 
     # 4. Оновлюємо баланс
     await finance_account_dal.update_account_balance(db, account.fa_id, amount_delta) #type: ignore
     
     # 5. Записуємо саму транзакцію (у вигляді словника)
-    new_tx = await transaction_dal.create_transaction(db, tx_data.model_dump())
+    tx_dict = tx_data.model_dump()
+    if tx_dict.get("transaction_date") and tx_dict["transaction_date"].tzinfo:
+        tx_dict["transaction_date"] = tx_dict["transaction_date"].replace(tzinfo=None)
+        
+    new_tx = await transaction_dal.create_transaction(db, tx_dict)
     
     # 6. Комітимо всі зміни разом (ACID гарантія)
     await db.commit()
+    await db.refresh(new_tx)
     
     return new_tx

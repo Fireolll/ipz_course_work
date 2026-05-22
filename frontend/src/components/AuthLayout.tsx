@@ -40,7 +40,7 @@ export default function AuthLayout({ onSuccess }: AuthProps) {
 
       if (isLogin) {
         // LOGIN: authenticate with backend
-        const tokenResponse = await api.login(email, password);
+        const tokenResponse = await api.login({ email, password });
         // Store token for future requests
         localStorage.setItem("access_token", tokenResponse.access_token);
         
@@ -65,7 +65,7 @@ export default function AuthLayout({ onSuccess }: AuthProps) {
         const userResponse = await api.register(registerData);
         
         // After registration, login to get token
-        const tokenResponse = await api.login(email, password);
+        const tokenResponse = await api.login({ email, password });
         localStorage.setItem("access_token", tokenResponse.access_token);
         
         user = {

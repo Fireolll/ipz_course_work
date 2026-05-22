@@ -38,10 +38,18 @@ export default function App() {
   // Initialize data stores on load
   useEffect(() => {
     initializeStorage();
-    setUser(getStoredUser());
-    setAccounts(getStoredAccounts());
-    setCategories(getStoredCategories());
-    setTransactions(getStoredTransactions());
+    const storedUser = getStoredUser();
+    setUser(storedUser);
+    
+    if (storedUser) {
+      // If user is logged in, sync with backend immediately
+      fetchUserData(storedUser.user_id);
+    } else {
+      // Otherwise use local/default data
+      setAccounts(getStoredAccounts());
+      setCategories(getStoredCategories());
+      setTransactions(getStoredTransactions());
+    }
   }, []);
 
   // Sync state helpers to persistent Storage
@@ -87,120 +95,122 @@ export default function App() {
       setStoredCategories(categoriesData);
       setStoredTransactions(transactionsData);
     } catch (error) {
-      console.error("Failed to fetch user data:", error);
-      // Fallback: use empty arrays or stored data
+      console.error("Failed to fetch user data from API, falling back to local storage:", error);
+      // Fallback: use stored data from localStorage
+      setAccounts(getStoredAccounts());
+      setCategories(getStoredCategories());
+      setTransactions(getStoredTransactions());
     }
   };
 
   // Interactions for Transactions
-  const handleAddTransaction = (
+  const handleAddTransaction = async (
     amount: number, 
     faId: number, 
     categoryId: number, 
     desc: string, 
     date: string
   ) => {
-    const newTx: Transaction = {
-      transaction_id: Date.now(),
-      fa_id: faId,
-      category_id: categoryId,
-      amount,
-      description: desc,
-      transaction_date: date,
-      tra_created_at: new Date().toISOString()
-    };
+    try {
+      const newTxData = {
+        fa_id: faId,
+        category_id: categoryId,
+        amount,
+        description: desc,
+        transaction_date: date
+      };
 
-    const targetCategory = categories.find(c => c.category_id === categoryId);
-    const isIncome = targetCategory ? targetCategory.type_of_cash_flow === TypeOfCashFlow.INCOME : false;
+      const savedTx = await api.createTransaction(newTxData);
+      
+      // Update local state with data from backend
+      updateTransactionsState([savedTx, ...transactions]);
 
-    // Calculate updated balances of the selected account
-    const updatedAccounts = accounts.map(acc => {
-      if (acc.fa_id === faId) {
-        const adjustment = isIncome ? amount : -amount;
-        return {
-          ...acc,
-          balance: Number((acc.balance + adjustment).toFixed(2))
-        };
-      }
-      return acc;
-    });
-
-    updateAccountsState(updatedAccounts);
-    updateTransactionsState([newTx, ...transactions]);
+      // Refresh accounts as balance changed on backend
+      const updatedAccounts = await api.getAccounts();
+      updateAccountsState(updatedAccounts);
+    } catch (error: any) {
+      console.error("Failed to add transaction:", error);
+      alert(`Не вдалося додати транзакцію: ${error.message}`);
+    }
   };
 
-  const handleDeleteTransaction = (txId: number) => {
-    const targetTx = transactions.find(t => t.transaction_id === txId);
-    if (!targetTx) return;
-
-    const cat = categories.find(c => c.category_id === targetTx.category_id);
-    const flowType = cat ? cat.type_of_cash_flow : TypeOfCashFlow.EXPENSE;
-
-    // Refund balances upon deleting
-    const updatedAccounts = accounts.map(acc => {
-      if (acc.fa_id === targetTx.fa_id) {
-        const adjustment = flowType === TypeOfCashFlow.INCOME ? -targetTx.amount : targetTx.amount;
-        return {
-          ...acc,
-          balance: Number((acc.balance + adjustment).toFixed(2))
-        };
-      }
-      return acc;
-    });
-
-    updateAccountsState(updatedAccounts);
-    updateTransactionsState(transactions.filter(t => t.transaction_id !== txId));
+  const handleDeleteTransaction = async (txId: number) => {
+    try {
+      await api.deleteTransaction(txId);
+      
+      // Filter out deleted transaction
+      updateTransactionsState(transactions.filter(t => t.transaction_id !== txId));
+      
+      // Refresh accounts as balance was refunded on backend
+      const updatedAccounts = await api.getAccounts();
+      updateAccountsState(updatedAccounts);
+    } catch (error) {
+      console.error("Failed to delete transaction:", error);
+      alert("Не вдалося видалити транзакцію");
+    }
   };
 
   // Accounts interaction handlers
-  const handleAddAccount = (name: string, balance: number, currency: Currency) => {
-    const newAccount: FinanceAccount = {
-      fa_id: Date.now(),
-      user_id: user?.user_id || 1,
-      fa_name: name,
-      balance,
-      currency,
-      is_active: true,
-      fa_created_at: new Date().toISOString()
-    };
-
-    updateAccountsState([...accounts, newAccount]);
+  const handleAddAccount = async (name: string, balance: number, currency: Currency) => {
+    try {
+      const newAccData = {
+        fa_name: name,
+        balance,
+        currency,
+        is_active: true
+      };
+      const savedAcc = await api.createAccount(newAccData);
+      updateAccountsState([...accounts, savedAcc]);
+    } catch (error: any) {
+      console.error("Failed to add account:", error);
+      alert(`Не вдалося створити рахунок: ${error.message}`);
+    }
   };
 
-  const handleUpdateAccountStatus = (faId: number, isActive: boolean) => {
-    updateAccountsState(accounts.map(acc => {
-      if (acc.fa_id === faId) {
-        return { ...acc, is_active: isActive };
-      }
-      return acc;
-    }));
+  const handleUpdateAccountStatus = async (faId: number, isActive: boolean) => {
+    try {
+      const updatedAcc = await api.updateAccountStatus(faId, { is_active: isActive });
+      updateAccountsState(accounts.map(acc => acc.fa_id === faId ? updatedAcc : acc));
+    } catch (error: any) {
+      console.error("Failed to update account status:", error);
+      alert(`Не вдалося змінити статус рахунку: ${error.message}`);
+    }
   };
 
-  const handleUpdateAccountBalance = (faId: number, newBalance: number) => {
-    updateAccountsState(accounts.map(acc => {
-      if (acc.fa_id === faId) {
-        return { ...acc, balance: Number(newBalance.toFixed(2)) };
-      }
-      return acc;
-    }));
+  const handleUpdateAccountBalance = async (faId: number, newBalance: number) => {
+    try {
+      const updatedAcc = await api.updateAccountBalance(faId, { balance: newBalance });
+      updateAccountsState(accounts.map(acc => acc.fa_id === faId ? updatedAcc : acc));
+    } catch (error: any) {
+      console.error("Failed to update account balance:", error);
+      alert(`Не вдалося оновити баланс: ${error.message}`);
+    }
   };
 
   // Categories interaction handlers
-  const handleAddCategory = (name: string, type: TypeOfCashFlow) => {
-    const newCategory: Category = {
-      category_id: Date.now(),
-      user_id: user?.user_id || 1,
-      category_name: name,
-      type_of_cash_flow: type,
-      is_default: false,
-      created_at: new Date().toISOString()
-    };
-
-    updateCategoriesState([...categories, newCategory]);
+  const handleAddCategory = async (name: string, type: TypeOfCashFlow) => {
+    try {
+      const newCatData = {
+        category_name: name,
+        type_of_cash_flow: type,
+        is_default: false
+      };
+      const savedCat = await api.createCategory(newCatData);
+      updateCategoriesState([...categories, savedCat]);
+    } catch (error: any) {
+      console.error("Failed to add category:", error);
+      alert(`Не вдалося створити категорію: ${error.message}`);
+    }
   };
 
-  const handleDeleteCategory = (categoryId: number) => {
-    updateCategoriesState(categories.filter(c => c.category_id !== categoryId));
+  const handleDeleteCategory = async (categoryId: number) => {
+    try {
+      await api.deleteCategory(categoryId);
+      updateCategoriesState(categories.filter(c => c.category_id !== categoryId));
+    } catch (error: any) {
+      console.error("Failed to delete category:", error);
+      alert(`Не вдалося видалити категорію. Можливо, вона системна або використовується. Деталі: ${error.message}`);
+    }
   };
 
   // Render correct content tab helper

@@ -14,4 +14,5 @@ async def create_account(
     """Створює новий фінансовий рахунок для користувача."""
     new_account = await finance_account_dal.create_account(db, account_data, user_id)
     await db.commit()
+    await db.refresh(new_account)
     return new_account

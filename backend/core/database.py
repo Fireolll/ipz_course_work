@@ -9,7 +9,7 @@ engine = create_async_engine(settings.DATABASE_URL)
 AsyncSessionLocal = async_sessionmaker(
     bind=engine,
     class_=AsyncSession,
-    expire_on_commit=True
+    expire_on_commit=False
 )
 # клас для наслідування іншими иоделями бази даних, що дозволяє визначати структуру таблиць та взаємозв'язки між ними.
 class Base(DeclarativeBase):

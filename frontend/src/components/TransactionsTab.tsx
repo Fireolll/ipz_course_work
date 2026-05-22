@@ -26,9 +26,10 @@ export default function TransactionsTab({
   onAddTransaction,
   onDeleteTransaction,
 }: TransactionsProps) {
+  const activeAccounts = accounts.filter(a => a.is_active);
   const [showAddModal, setShowAddModal] = useState(false);
   const [amount, setAmount] = useState("");
-  const [faId, setFaId] = useState<number>(accounts[0]?.fa_id || 0);
+  const [faId, setFaId] = useState<number>(activeAccounts[0]?.fa_id || 0);
   const [categoryId, setCategoryId] = useState<number>(categories[0]?.category_id || 0);
   const [description, setDescription] = useState("");
   const [dateStr, setDateStr] = useState(new Date().toISOString().split("T")[0]);

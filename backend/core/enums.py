@@ -1,4 +1,4 @@
-# Спільні типи даних (Enum) для бази та фронтенду (Currency, Period, TypeOfCashFlow).from enum import Enums
+# Спільні типи даних (Enum) для бази та фронтенду (Currency, Period, TypeOfCashFlow).
 import enum
 
 class Currency(str, enum.Enum):

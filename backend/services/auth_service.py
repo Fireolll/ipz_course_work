@@ -7,20 +7,31 @@ from schemas.user_schema import UserCreate
 from core.security import get_password_hash, verify_password, create_access_token
 
 async def register_new_user(db: AsyncSession, user_in: UserCreate):
+    
+    # --- ДОДАНИЙ БЛОК ПЕРЕВІРКИ ---
+    # Шукаємо в базі користувача з таким email
+    existing_user = await user_dal.get_user_by_email(db, user_in.email)
+    
+    # Якщо знайшли — викидаємо помилку (це не дасть системі "впасти" від дублікату)
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Користувач з таким email вже зареєстрований"
+        )
+    # ------------------------------
 
     hashed_password = get_password_hash(user_in.password)
 
     user_data = user_in.model_dump(exclude={"password"})
     user_data["password_hash"] = hashed_password
     
-    # ДОДАЙ ЦІ ДВА РЯДКИ: примусово передаємо об'єкти Enum, а не текст
+    # примусово передаємо об'єкти Enum, а не текст
     user_data["currency"] = user_in.currency
     user_data["financial_period"] = user_in.financial_period
 
     # Зберігаємо в базу
     new_user = await user_dal.create_user(db, user_data)
     
-    # Видали звідси await db.commit(), бо він у тебе ВЖЕ Є в user_dal.py!
     print(f"✅ User successfully created: {new_user.user_id}")
     
     return new_user
