@@ -32,11 +32,11 @@ async def get_valid_reset_token(db: AsyncSession, token: str) -> PasswordResetMo
     result = await db.execute(stmt)
     return result.scalars().first()
 
-async def mark_token_as_used(db: AsyncSession, reset_record: PasswordResetModel):
+async def mark_token_as_used(db: AsyncSession, reset_id: int):
     #позначає використаний токен, для уникнення повторного використання
     stmt = (
         update(PasswordResetModel)
-        .where(PasswordResetModel.id == reset_record.id)
+        .where(PasswordResetModel.id == reset_id)
         .values(used=True)
     )
     await db.execute(stmt)

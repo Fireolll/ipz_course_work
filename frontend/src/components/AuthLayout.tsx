@@ -3,10 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { User, Currency } from "../types";
 import { setStoredUser } from "../storage";
-import { Mail, Lock, User as UserIcon, Wallet, ArrowUpRight, CheckCircle2, ChevronRight } from "lucide-react";
+import { Mail, Lock, User as UserIcon, Wallet, ArrowUpRight, CheckCircle2, ChevronLeft } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { api } from "../api";
 
@@ -16,19 +16,60 @@ interface AuthProps {
 
 export default function AuthLayout({ onSuccess }: AuthProps) {
   const [isLogin, setIsLogin] = useState(true);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [isResetPassword, setIsResetPassword] = useState(false);
+  const [resetToken, setResetToken] = useState("");
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
   const [currency, setCurrency] = useState<Currency>(Currency.UAH);
+  
   const [error, setError] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    // Check for reset token in URL on mount
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get("token");
+    if (token) {
+      setResetToken(token);
+      setIsResetPassword(true);
+      setIsLogin(false);
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setSuccessMsg("");
     setLoading(true);
 
     try {
+      if (isResetPassword) {
+        if (!password || password.length < 8) {
+          throw new Error("Пароль має містити щонайменше 8 символів.");
+        }
+        await api.resetPassword(resetToken, password);
+        setSuccessMsg("Пароль успішно змінено. Ви можете увійти.");
+        // Clear token from URL to avoid confusion
+        window.history.replaceState({}, document.title, window.location.pathname);
+        setTimeout(() => {
+          setIsResetPassword(false);
+          setIsLogin(true);
+          setPassword("");
+        }, 3000);
+        return;
+      }
+
+      if (isForgotPassword) {
+        if (!email) throw new Error("Будь ласка, введіть email.");
+        const res = await api.forgotPassword(email);
+        setSuccessMsg("Якщо акаунт існує, посилання для відновлення надіслано на пошту.");
+        return;
+      }
+
       if (!email || !password) {
         throw new Error("Будь ласка, заповніть всі обов'язкові поля.");
       }
@@ -39,12 +80,9 @@ export default function AuthLayout({ onSuccess }: AuthProps) {
       let user: User;
 
       if (isLogin) {
-        // LOGIN: authenticate with backend
         const tokenResponse = await api.login({ email, password });
-        // Store token for future requests
         localStorage.setItem("access_token", tokenResponse.access_token);
         
-        // Fetch user data after getting token
         const userResponse = await api.getMe();
         user = {
           user_id: userResponse.user_id,
@@ -54,7 +92,6 @@ export default function AuthLayout({ onSuccess }: AuthProps) {
           created_at: userResponse.created_at,
         };
       } else {
-        // REGISTER: create new user on backend
         const registerData = {
           email,
           password,
@@ -64,7 +101,6 @@ export default function AuthLayout({ onSuccess }: AuthProps) {
         };
         const userResponse = await api.register(registerData);
         
-        // After registration, login to get token
         const tokenResponse = await api.login({ email, password });
         localStorage.setItem("access_token", tokenResponse.access_token);
         
@@ -80,10 +116,24 @@ export default function AuthLayout({ onSuccess }: AuthProps) {
       setStoredUser(user);
       onSuccess(user);
     } catch (err: any) {
-      setError(err.message || "Сталася помилка при авторизації.");
+      setError(err.message || "Сталася помилка при обробці запиту.");
     } finally {
       setLoading(false);
     }
+  };
+
+  const getHeaderText = () => {
+    if (isResetPassword) return "Новий пароль";
+    if (isForgotPassword) return "Відновлення пароля";
+    return isLogin ? "Вітаємо знову!" : "Створити акаунт";
+  };
+
+  const getSubHeaderText = () => {
+    if (isResetPassword) return "Введіть новий надійний пароль для вашого акаунту.";
+    if (isForgotPassword) return "Введіть вашу електронну пошту, і ми надішлемо посилання для відновлення.";
+    return isLogin 
+      ? "Увійдіть зі своїми тестовими даними для доступу до системи фінансів." 
+      : "Зареєструйте новий акаунт для ведення власного бюджету.";
   };
 
   return (
@@ -142,20 +192,27 @@ export default function AuthLayout({ onSuccess }: AuthProps) {
       {/* Auth Entry Form */}
       <div className="w-full lg:w-[480px] p-8 lg:p-16 flex flex-col justify-center bg-white" id="auth_form_panel">
         <div className="w-full max-w-sm mx-auto">
+          {(isForgotPassword || isResetPassword) && !isResetPassword && (
+            <button 
+              onClick={() => { setIsForgotPassword(false); setError(""); setSuccessMsg(""); }}
+              className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-800 mb-6 font-medium transition-colors"
+            >
+              <ChevronLeft className="w-4 h-4" /> Повернутися
+            </button>
+          )}
+
           <div className="mb-8">
             <h2 className="text-2xl font-bold tracking-tight text-slate-900">
-              {isLogin ? "Вітаємо знову!" : "Створити акаунт"}
+              {getHeaderText()}
             </h2>
             <p className="text-slate-500 text-sm mt-1.5 leading-relaxed">
-              {isLogin 
-                ? "Увійдіть зі своїми тестовими даними для доступу до системи фінансів." 
-                : "Зареєструйте новий акаунт для ведення власного бюджету."}
+              {getSubHeaderText()}
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <AnimatePresence mode="popLayout">
-              {!isLogin && (
+              {!isLogin && !isForgotPassword && !isResetPassword && (
                 <motion.div
                   key="username-input"
                   initial={{ opacity: 0, height: 0 }}
@@ -178,36 +235,51 @@ export default function AuthLayout({ onSuccess }: AuthProps) {
               )}
             </AnimatePresence>
 
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-600 block">Електронна пошта</label>
-              <div className="relative">
-                <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="yourname@gmail.com"
-                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 text-sm bg-slate-50 focus:bg-white text-slate-800 transition-colors"
-                />
+            {!isResetPassword && (
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-slate-600 block">Електронна пошта</label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="yourname@gmail.com"
+                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 text-sm bg-slate-50 focus:bg-white text-slate-800 transition-colors"
+                  />
+                </div>
               </div>
-            </div>
+            )}
 
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-600 block">Пароль</label>
-              <div className="relative">
-                <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 text-sm bg-slate-50 focus:bg-white text-slate-800 transition-colors"
-                />
+            {!isForgotPassword && (
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-slate-600 block">Пароль</label>
+                  {isLogin && !isResetPassword && (
+                    <button
+                      type="button"
+                      onClick={() => { setIsForgotPassword(true); setIsLogin(false); setError(""); setSuccessMsg(""); }}
+                      className="text-[10px] text-emerald-600 hover:text-emerald-800 font-semibold"
+                    >
+                      Забули пароль?
+                    </button>
+                  )}
+                </div>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 text-sm bg-slate-50 focus:bg-white text-slate-800 transition-colors"
+                  />
+                </div>
               </div>
-            </div>
+            )}
 
             <AnimatePresence mode="popLayout">
-              {!isLogin && (
+              {!isLogin && !isForgotPassword && !isResetPassword && (
                 <motion.div
                   key="currency-input"
                   initial={{ opacity: 0, height: 0 }}
@@ -230,8 +302,13 @@ export default function AuthLayout({ onSuccess }: AuthProps) {
             </AnimatePresence>
 
             {error && (
-              <div className="text-xs font-medium text-red-500 bg-red-50 border border-red-100 p-3 rounded-xl">
+              <div className="text-xs font-medium text-rose-600 bg-rose-50 border border-rose-100 p-3 rounded-xl">
                 {error}
+              </div>
+            )}
+            {successMsg && (
+              <div className="text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-100 p-3 rounded-xl">
+                {successMsg}
               </div>
             )}
 
@@ -244,14 +321,18 @@ export default function AuthLayout({ onSuccess }: AuthProps) {
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
               ) : (
                 <>
-                  <span>{isLogin ? "Увійти" : "Зареєструватися"}</span>
+                  <span>
+                    {isResetPassword ? "Встановити пароль" : 
+                     isForgotPassword ? "Надіслати лист" : 
+                     isLogin ? "Увійти" : "Зареєструватися"}
+                  </span>
                   <ArrowUpRight className="w-4 h-4" />
                 </>
               )}
             </button>
           </form>
 
-          {isLogin && (
+          {isLogin && !isForgotPassword && !isResetPassword && (
             <div className="mt-4 p-3 bg-indigo-50/10 border border-indigo-100/50 rounded-xl text-xs text-indigo-700 flex flex-col gap-1.5 leading-relaxed">
               <span className="font-semibold block">💡 Тестовий доступ:</span>
               <p>Для швидкого входу ви можете автоматично заповнити форму:</p>
@@ -268,21 +349,24 @@ export default function AuthLayout({ onSuccess }: AuthProps) {
             </div>
           )}
 
-          <div className="text-center mt-6">
-            <button
-              onClick={() => {
-                setIsLogin(!isLogin);
-                setError("");
-                setEmail("");
-                setPassword("");
-                setUsername("");
-                setCurrency(Currency.UAH);
-              }}
-              className="text-xs text-slate-500 hover:text-emerald-700 font-medium transition-colors"
-            >
-              {isLogin ? "Немає облікового запису? Зареєструватися" : "Вже маєте акаунт? Увійти"}
-            </button>
-          </div>
+          {!isForgotPassword && !isResetPassword && (
+            <div className="text-center mt-6">
+              <button
+                onClick={() => {
+                  setIsLogin(!isLogin);
+                  setError("");
+                  setSuccessMsg("");
+                  setEmail("");
+                  setPassword("");
+                  setUsername("");
+                  setCurrency(Currency.UAH);
+                }}
+                className="text-xs text-slate-500 hover:text-emerald-700 font-medium transition-colors"
+              >
+                {isLogin ? "Немає облікового запису? Зареєструватися" : "Вже маєте акаунт? Увійти"}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
